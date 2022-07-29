@@ -1,0 +1,23 @@
+syntax = "proto3";
+package main;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/conrey-engineering/go-print-farm/src/protobufs/printer";
+
+message Printer {
+    int32 id = 1; // Unique ID
+    string name = 2;
+    enum PrinterStatus {
+        ACTIVE = 0;
+        INACTIVE = 1;
+        MAINTENANCE = 2;
+    }
+    PrinterStatus status = 3;
+
+    google.protobuf.Timestamp last_updated = 4;
+}
+
+message Printers {
+    repeated Printer printer = 1;
+}
