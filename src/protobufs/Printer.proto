@@ -5,19 +5,49 @@ import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/conrey-engineering/go-print-farm/src/protobufs/printer";
 
-message Printer {
-    int32 id = 1; // Unique ID
-    string name = 2;
-    enum PrinterStatus {
+message PrinterStatus {
+    enum State { 
         ACTIVE = 0;
         INACTIVE = 1;
         MAINTENANCE = 2;
+        ERROR = 3;
     }
-    PrinterStatus status = 3;
-
-    google.protobuf.Timestamp last_updated = 4;
+    State state = 1;
+    string message = 2;
+    google.protobuf.Timestamp last_updated = 3;
 }
 
-message Printers {
-    repeated Printer printer = 1;
+message PrinterAPI {
+    enum api_type {
+        OCTOPRINT = 0;
+    }
+
+    api_type type = 1;
+    string secret = 2;
+    string hostname = 3;
+    int32 port = 4;
+}
+
+message Printer {
+    int32 id = 1; // Unique ID
+    string name = 2;
+
+    PrinterAPI api = 3;
+
+    PrinterStatus status = 4;
+
+    google.protobuf.Timestamp last_updated = 5;
+}
+
+message PrinterEvent {
+    enum Type { 
+        CREATE = 0;
+        DELETE = 1;
+        OFFLINE = 2;
+        ONLINE = 3;
+        ERROR = 4;
+    }
+    Type type = 1;
+    Printer printer = 2;
+    google.protobuf.Timestamp received_at = 3;
 }

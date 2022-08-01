@@ -7,15 +7,14 @@ package(default_visibility = ["//visibility:public"])
 
 proto_library(
     name = "printer_proto",
-    srcs = ["Printer.proto"],
-    deps = [
-        "@com_google_protobuf//:any_proto",
-        "@com_google_protobuf//:timestamp_proto",
+    srcs = [
+        "Printer.proto",
     ],
+    deps = ["@com_google_protobuf//:timestamp_proto"],
 )
 
 go_proto_library(
     name = "printer_proto_go",
-    importpath = "example.com/repo/protobufs",
+    importpath = "github.com/conrey-engineering/go-print-farm/src/protobufs/printer",
     proto = ":printer_proto",
 )
