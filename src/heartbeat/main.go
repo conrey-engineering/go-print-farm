@@ -9,7 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"fmt"
+	// "fmt"
 	"encoding/json"
 )
 
@@ -25,8 +25,8 @@ func main() {
 	}
 
 	examplePrinter := pb.Printer{
-		Id: 5,
-		Name: "Test Printer",
+		Id: 6,
+		Name: "Test Printe2r",
 		Api: &pb.PrinterAPI{
 			Type: pb.PrinterAPI_OCTOPRINT,
 			Secret: "6879EBD309D34FA9B85FF8555A87B35E",
@@ -52,7 +52,7 @@ func main() {
 	
 	// Create example printer
 	var event = pb.PrinterEvent{
-		Type: pb.PrinterEvent_ONLINE,
+		Type: pb.PrinterEvent_CREATE,
 		Printer: &examplePrinter,
 	}
 	data, err := json.Marshal(event)

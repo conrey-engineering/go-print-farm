@@ -11,22 +11,24 @@ services:
   postgres:
     image: postgres:12
     restart: always
+    ports:
+      - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
     environment:
       POSTGRES_PASSWORD: 'password'
-  graphql:
-    image: hasura/graphql-engine:v2.9.0
-    ports:
-      - "8081:8080"
-    depends_on:
-      - postgres
-    restart: always
-    environment:
-      HASURA_GRAPHQL_METADATA_DATABASE_URL: postgres://postgres:password@postgres:5432/postgres
-      HASURA_GRAPHQL_DATABASE_URL: postgres://postgres:password@postgres:5432/postgres
-      HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
-      HASURA_GRAPHQL_DEV_MODE: "true"
+  # graphql:
+  #   image: hasura/graphql-engine:v2.9.0
+  #   ports:
+  #     - "8081:8080"
+  #   depends_on:
+  #     - postgres
+  #   restart: always
+  #   environment:
+  #     HASURA_GRAPHQL_METADATA_DATABASE_URL: postgres://postgres:password@postgres:5432/postgres
+  #     HASURA_GRAPHQL_DATABASE_URL: postgres://postgres:password@postgres:5432/postgres
+  #     HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
+  #     HASURA_GRAPHQL_DEV_MODE: "true"
   zookeeper:
     image: docker.io/bitnami/zookeeper:3.8
     ports:

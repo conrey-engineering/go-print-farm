@@ -34,10 +34,16 @@ go_binary(
 
 go_library(
     name = "shepherd_lib",
-    srcs = ["main.go"],
+    srcs = [
+        "main.go",
+        "printer_type.go",
+    ],
     importpath = "github.com/conrey-engineering/go-print-farm/src/shepherd",
     deps = [
         "//src/protobufs:printer_proto_go",
         "@com_github_segmentio_kafka_go//:kafka-go",
+        "@io_gorm_driver_postgres//:postgres",
+        "@io_gorm_gorm//:gorm",
+        "@org_uber_go_zap//:go_default_library",
     ],
 )

@@ -5,11 +5,29 @@ import (
 	"github.com/segmentio/kafka-go"
 	"context"
 	"encoding/json"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
 	pb "github.com/conrey-engineering/go-print-farm/src/protobufs/printer"
+	"gorm.io/gorm"
+	"gorm.io/driver/postgres"
+	"go.uber.org/zap"
 )
+
+func NewPrinter(db *gorm.DB, printer *pb.Printer) {
+	printerDb := Printer{
+		Name: printer.Name,
+		APIConfig: PrinterAPIConfig{
+			Type: "octoprint",
+			Secret: printer.Api.Secret,
+			Hostname: printer.Api.Hostname,
+			Port: printer.Api.Port,
+		},
+	}
+
+	db.Create(&printerDb)
+}
 
 func generateKafkaReader(topic string) *kafka.Reader {
 	logMsg := fmt.Sprintf("Created Kafka Reader for topic: %s", topic)
@@ -23,7 +41,7 @@ func generateKafkaReader(topic string) *kafka.Reader {
 	})
 }
 
-func HandlePrinterTopicEvents(ctx context.Context) {
+func HandlePrinterTopicEvents(ctx context.Context, logger *zap.SugaredLogger, db *gorm.DB) {
 	rdr := generateKafkaReader("printer_events")
 	rdr.SetOffset(0)
 	fmt.Println("Listening for events...")
@@ -40,9 +58,12 @@ func HandlePrinterTopicEvents(ctx context.Context) {
 			continue
 		}
 
+		iterPrinter := eventMessage.Printer
+
 		switch eventType := eventMessage.Type; eventType {
 		case pb.PrinterEvent_CREATE:
 			fmt.Println("Creating printer")
+			NewPrinter(db, iterPrinter)
 		case pb.PrinterEvent_DELETE:
 			fmt.Println("Deleting printer")
 		case pb.PrinterEvent_ERROR:
@@ -72,6 +93,13 @@ func main() {
 
 	ctx := context.Background()
 
+	logger, err := zap.NewProduction()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	sugar := logger.Sugar()
+
 	go func() {
 		for { 
 			_ = <-sigs
@@ -79,7 +107,17 @@ func main() {
 		}
 	}()
 
-	go HandlePrinterTopicEvents(ctx)
+	db, err := gorm.Open(postgres.Open("host=localhost user=postgres password=password dbname=print_farm2"), &gorm.Config{})
+	if err != nil {
+		panic(err.Error())
+	}
+
+	// Database migrations
+	// db.AutoMigrate(&PrinterAPIType{})
+	db.AutoMigrate(&PrinterAPIConfig{})
+	db.AutoMigrate(&Printer{})
+
+	go HandlePrinterTopicEvents(ctx, sugar, db)
 
 	<-done
 
