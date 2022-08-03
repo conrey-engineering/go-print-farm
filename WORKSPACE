@@ -52,11 +52,11 @@ http_archive(
 load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
 load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", "go_repository")
 
-gazelle_dependencies(go_sdk = "go_sdk")
-
 go_rules_dependencies()
 
 go_register_toolchains(version = "1.18.3")
+
+gazelle_dependencies(go_sdk = "go_sdk")
 
 #### Protobuf
 load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies", "rules_proto_toolchains")
@@ -225,5 +225,19 @@ go_repository(
     sum = "h1:i40aqfkR1h2SlN9hojwV5ZA91wcXFOvkdNIeFDP5koI=",
     version = "v1.8.0",
 )
+
+go_repository(
+    name = "org_golang_x_text",
+    importpath = "golang.org/x/text",
+    sum = "0",
+    version = "v0.3.7"
+)
+go_repository(
+    name = "org_golang_x_crypto",
+    importpath = "golang.org/x/crypto",
+    sum = "0",
+    version = "v0.0.0-20220722155217-630584e8d5aa"
+)
+
 
 protobuf_deps()
