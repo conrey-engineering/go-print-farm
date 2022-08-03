@@ -58,29 +58,11 @@ go_register_toolchains(version = "1.18.3")
 
 gazelle_dependencies(go_sdk = "go_sdk")
 
-#### Protobuf
-load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies", "rules_proto_toolchains")
-load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
-
-rules_proto_dependencies()
-
-rules_proto_toolchains()
-
-# load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
-
-# protobuf_deps()
-
 go_repository(
     name = "com_github_segmentio_kafka_go",
-    # build_file_proto_mode = "disable_global",
     importpath = "github.com/segmentio/kafka-go",
     sum = "h1:Ohr+9E+kDv/Ld2UPJN9hnKZRd2qgiqCmI8v2e1qlfLM=",
-    # urls = [
-    #     "https://github.com/segmentio/kafka-go/archive/refs/tags/v0.4.32.zip",
-    # ],
-    # strip_prefix = "kafka-go-0.4.32",
     version = "v0.4.32",
-    # version = "v0.10.0",
 )
 
 go_repository(
@@ -95,16 +77,6 @@ go_repository(
     importpath = "github.com/pierrec/lz4/v4",
     sum = "h1:MO0/ucJhngq7299dKLwIMtgTfbkoSPF6AoMYDd8Q4q0=",
     version = "v4.1.15",
-)
-
-go_repository(
-    name = "org_golang_google_protobuf",
-    build_file_proto_mode = "disable_global",
-    importpath = "google.golang.org/protobuf",
-    sum = "h1:d0NfwRgPtno5B1Wa6L2DAG+KivqkdutMf1UhdNx175w=",
-    version = "v1.28.1",
-    # urls = ["https://github.com/protocolbuffers/protobuf-go/archive/refs/tags/v1.28.1.zip"],
-    # strip_prefix = "protobuf-go-1.28.1/proto"
 )
 
 go_repository(
@@ -220,24 +192,29 @@ go_repository(
 )
 
 go_repository(
-    name = "com_github_gorilla_mux",
-    importpath = "github.com/gorilla/mux",
-    sum = "h1:i40aqfkR1h2SlN9hojwV5ZA91wcXFOvkdNIeFDP5koI=",
-    version = "v1.8.0",
-)
-
-go_repository(
     name = "org_golang_x_text",
     importpath = "golang.org/x/text",
-    sum = "0",
+    sum = "h1:olpwvP2KacW1ZWvsR7uQhoyTYvKAupfQrRGBFM352Gk=",
     version = "v0.3.7",
 )
 
 go_repository(
     name = "org_golang_x_crypto",
     importpath = "golang.org/x/crypto",
-    sum = "0",
+    sum = "h1:zuSxTR4o9y82ebqCUJYNGJbGPo6sKVl54f/TVDObg1c=",
     version = "v0.0.0-20220722155217-630584e8d5aa",
 )
 
+#### Protobuf
+load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies", "rules_proto_toolchains")
+load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
+
+rules_proto_dependencies()
+
+rules_proto_toolchains()
+
 protobuf_deps()
+
+load("//src/api:deps.bzl", "api_dependencies")
+
+api_dependencies()

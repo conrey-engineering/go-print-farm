@@ -21,7 +21,7 @@ go_library(
     importpath = "github.com/conrey-engineering/go-print-farm/src/api",
     deps = [
         "//src/protobufs:printer_proto_go",
-        "@com_github_gorilla_mux//:mux",
+        "@com_github_gorilla_mux//:go_default_library",
         "@com_github_segmentio_kafka_go//:kafka-go",
         "@org_uber_go_zap//:zap",
     ],
