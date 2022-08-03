@@ -230,14 +230,14 @@ go_repository(
     name = "org_golang_x_text",
     importpath = "golang.org/x/text",
     sum = "0",
-    version = "v0.3.7"
+    version = "v0.3.7",
 )
+
 go_repository(
     name = "org_golang_x_crypto",
     importpath = "golang.org/x/crypto",
     sum = "0",
-    version = "v0.0.0-20220722155217-630584e8d5aa"
+    version = "v0.0.0-20220722155217-630584e8d5aa",
 )
-
 
 protobuf_deps()
