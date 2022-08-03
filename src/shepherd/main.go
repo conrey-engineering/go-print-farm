@@ -1,11 +1,9 @@
 package main
 
 import (
-	"fmt"
-	// "github.com/segmentio/kafka-go"
-	//  "github.com/conrey-engineering/go-print-farm/lib/kafka"
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/conrey-engineering/go-print-farm/lib/kafka"
 	pb "github.com/conrey-engineering/go-print-farm/src/protobufs/printer"
 	"github.com/google/uuid"

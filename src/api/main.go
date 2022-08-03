@@ -5,20 +5,16 @@ import (
 	"encoding/json"
 	"fmt"
 	libKafka "github.com/conrey-engineering/go-print-farm/lib/kafka"
+	pb "github.com/conrey-engineering/go-print-farm/src/protobufs/printer"
 	"github.com/gorilla/mux"
 	"github.com/segmentio/kafka-go"
 	"go.uber.org/zap"
+	"io"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
-	// "sync"
-	"io"
 	"time"
-
-	// "google.golang.org/protobuf/proto"
-	// heartbeat "github.com/conrey-engineering/go-print-farm/src/protobufs/heartbeat"
-	pb "github.com/conrey-engineering/go-print-farm/src/protobufs/printer"
 )
 
 var (
