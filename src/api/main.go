@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
-	// "github.com/segmentio/kafka-go"
+	"github.com/segmentio/kafka-go"
 	// kafkaTest "github.com/conrey-engineering/go-print-farm/lib/kafka"
 	"go.uber.org/zap"
 	"log"
@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/signal"
 	// "sync"
+	"io"
 	"time"
 
 	// "google.golang.org/protobuf/proto"
@@ -32,6 +33,7 @@ var (
 	}
 	PrinterEventReader       = kafkaConn.newReader("printer_events", 0)
 	PrinterHeartbeatReader   = kafkaConn.newReader("printer_heartbeats", 0)
+	PrinterEventWriter       = kafkaConn.newWriter("printer_events", 0)
 	Logger, _                = zap.NewProduction()
 	SugarLogger              = Logger.Sugar()
 	printerEventMessages     = KafkaMessages{}
@@ -91,6 +93,57 @@ func servePrinterEventLog(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", printerEventMessages.Messages)
 }
 
+func servePrinterCreate(w http.ResponseWriter, r *http.Request) {
+	var (
+		body, _      = io.ReadAll(r.Body)
+		requestData  = map[string]string{}
+		expectedKeys = []string{
+			"printer_name",
+			"hostname",
+			"port",
+			"api_token",
+		}
+	)
+
+	json.Unmarshal(body, &requestData)
+
+	for _, key := range expectedKeys {
+		// Check if key from expectedKeys is in requestData
+		if _, ok := requestData[key]; !ok {
+			msg := fmt.Sprintf("missing key in request data: %s", key)
+
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(msg))
+			return
+		}
+	}
+
+	printerEventMessage := pb.PrinterEvent{
+		Type: pb.PrinterEvent_CREATE,
+		Printer: &pb.Printer{
+			Name: requestData["printer_name"],
+			Api: &pb.PrinterAPI{
+				Type:     pb.PrinterAPI_OCTOPRINT,
+				Secret:   requestData["api_token"],
+				Hostname: requestData["hostname"],
+				Port:     80,
+			},
+		},
+	}
+
+	msgData, _ := json.Marshal(printerEventMessage)
+	err := PrinterEventWriter.WriteMessages(context.Background(),
+		kafka.Message{
+			Value: msgData,
+		},
+	)
+	if err != nil {
+		SugarLogger.Errorw("Problem sending kafka message",
+			"message", string(msgData),
+		)
+	}
+}
+
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		SugarLogger.Infow("Handling request",
@@ -118,8 +171,13 @@ func main() {
 		Handler:      mux,
 	}
 	mux.Use(loggingMiddleware)
+	mux.HandleFunc("/printers/create", servePrinterCreate).Methods("POST")
 	mux.HandleFunc("/printers/events", servePrinterEventLog)
 	mux.HandleFunc("/printers/heartbeats", servePrinterHeartbeatLog)
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		// an example API handler
+		json.NewEncoder(w).Encode(map[string]bool{"ok": true})
+	})
 
 	// Run our server in a goroutine so that it doesn't block.
 	go func() {
