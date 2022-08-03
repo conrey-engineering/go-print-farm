@@ -7,8 +7,3 @@ buildifier(
 
 # gazelle:prefix github.com/conrey-engineering/go-print-farm
 gazelle(name = "gazelle")
-
-alias(
-    name = "web-server",
-    actual = "//src/web-server:main",
-)
