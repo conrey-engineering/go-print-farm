@@ -17,4 +17,26 @@ go_proto_library(
     name = "printer_proto_go",
     importpath = "github.com/conrey-engineering/go-print-farm/src/protobufs/printer",
     proto = ":printer_proto",
+    # gc_goopts = ["--gorm_out=."],
 )
+
+proto_library(
+    name = "heartbeat_proto",
+    srcs = [
+        "Heartbeat.proto",
+    ],
+    deps = [
+        # "//:root_proto",
+        # ":Printer.proto",
+        "@com_google_protobuf//:timestamp_proto",
+    ],
+)
+
+go_proto_library(
+    name = "heartbeat_go_proto",
+    importpath = "github.com/conrey-engineering/go-print-farm/src/protobufs/heartbeat",
+    proto = ":heartbeat_proto",
+    # deps = [":Printer.proto"],
+)
+
+exports_files(["*.proto"])

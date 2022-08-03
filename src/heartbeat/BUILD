@@ -1,4 +1,4 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -43,13 +43,9 @@ go_library(
     ],
     importpath = "github.com/conrey-engineering/go-print-farm/src/heartbeat",
     deps = [
+        "//src/protobufs:heartbeat_go_proto",
         "//src/protobufs:printer_proto_go",
         "@com_github_segmentio_kafka_go//:kafka-go",
+        "@org_uber_go_zap//:zap",
     ],
-)
-
-go_test(
-    name = "heartbeat_test",
-    srcs = ["octopi_printer_test.go"],
-    embed = [":heartbeat_lib"],
 )

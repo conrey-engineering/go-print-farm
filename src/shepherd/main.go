@@ -3,49 +3,69 @@ package main
 import (
 	"fmt"
 	"github.com/segmentio/kafka-go"
+	//  "github.com/conrey-engineering/go-print-farm/lib/kafka"
 	"context"
 	"encoding/json"
+	pb "github.com/conrey-engineering/go-print-farm/src/protobufs/printer"
+	"github.com/google/uuid"
+	"go.uber.org/zap"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
-	pb "github.com/conrey-engineering/go-print-farm/src/protobufs/printer"
-	"gorm.io/gorm"
-	"gorm.io/driver/postgres"
-	"go.uber.org/zap"
 )
 
-func NewPrinter(db *gorm.DB, printer *pb.Printer) {
-	printerDb := Printer{
-		Name: printer.Name,
-		APIConfig: PrinterAPIConfig{
-			Type: "octoprint",
-			Secret: printer.Api.Secret,
+func newPrinter(db *gorm.DB, printer *pb.Printer) {
+	var (
+		printerID, _     = uuid.Parse(printer.Id)
+		printerApiConfig = PrinterAPIConfig{
+			Type:     "octoprint",
+			Secret:   printer.Api.Secret,
 			Hostname: printer.Api.Hostname,
-			Port: printer.Api.Port,
-		},
-	}
+			Port:     printer.Api.Port,
+		}
+		printerDb = Printer{
+			ID:        printerID,
+			Name:      printer.Name,
+			APIConfig: printerApiConfig,
+		}
+	)
 
-	db.Create(&printerDb)
+	// If a printer of name printer.Name does not exist in the DB, create it
+	db.Debug().FirstOrCreate(&printerDb)
 }
 
-func generateKafkaReader(topic string) *kafka.Reader {
-	logMsg := fmt.Sprintf("Created Kafka Reader for topic: %s", topic)
-	fmt.Println(logMsg)
-	return kafka.NewReader(kafka.ReaderConfig{
-		Brokers: []string{"127.0.0.1:9092"},
-		Topic: topic,
-		Partition: 0,
-		MinBytes: 10e3, // 10KB
-		MaxBytes: 10e6, // 10MB
+func generateKafkaReader(logger *zap.SugaredLogger, topic string, partition int) *kafka.Reader {
+	logger.Infow("Creating kafka reader",
+		"topic", topic,
+		"partition", partition,
+	)
+	var rdr = kafka.NewReader(kafka.ReaderConfig{
+		Brokers:   []string{"127.0.0.1:9092"},
+		Topic:     topic,
+		Partition: partition,
+		MinBytes:  10e3, // 10KB
+		MaxBytes:  10e6, // 10MB
 	})
+
+	logger.Infow("Created kafka reader",
+		"topic", topic,
+		"partition", partition,
+	)
+
+	return rdr
 }
 
-func HandlePrinterTopicEvents(ctx context.Context, logger *zap.SugaredLogger, db *gorm.DB) {
-	rdr := generateKafkaReader("printer_events")
+func handlePrinterTopicEvents(ctx context.Context, logger *zap.SugaredLogger, db *gorm.DB, kafka_topic string) {
+	rdr := generateKafkaReader(logger, kafka_topic, 0)
 	rdr.SetOffset(0)
-	fmt.Println("Listening for events...")
-	for { 
+	logger.Infow("Listening for messages",
+		"kafka_topic", kafka_topic,
+	)
+
+	for {
 		msg, err := rdr.ReadMessage(ctx)
 		if err != nil {
 			panic(err.Error())
@@ -54,7 +74,7 @@ func HandlePrinterTopicEvents(ctx context.Context, logger *zap.SugaredLogger, db
 		var eventMessage = pb.PrinterEvent{}
 		json.Unmarshal(msg.Value, &eventMessage)
 		if eventMessage.Printer == nil {
-			fmt.Println("Error: Printer not found in event message")
+			logger.Errorw("Error: Printer not found in event message")
 			continue
 		}
 
@@ -62,25 +82,29 @@ func HandlePrinterTopicEvents(ctx context.Context, logger *zap.SugaredLogger, db
 
 		switch eventType := eventMessage.Type; eventType {
 		case pb.PrinterEvent_CREATE:
-			fmt.Println("Creating printer")
-			NewPrinter(db, iterPrinter)
+			logger.Infow("Create printer",
+				"printer_name", iterPrinter.Name,
+			)
+			newPrinter(db, iterPrinter)
 		case pb.PrinterEvent_DELETE:
-			fmt.Println("Deleting printer")
+			logger.Infow("Deleting printer",
+				"printer_name", iterPrinter.Name,
+			)
 		case pb.PrinterEvent_ERROR:
-			fmt.Println("Marking printer as errored")
+			logger.Infow("Marking printer as errored",
+				"printer_name", iterPrinter.Name,
+			)
 		case pb.PrinterEvent_OFFLINE:
-			fmt.Println("Marking printer as offline")
+			logger.Infow("Marking printer as offline",
+				"printer_name", iterPrinter.Name,
+			)
 		case pb.PrinterEvent_ONLINE:
-			fmt.Println("Marking printer as online")
+			logger.Infow("Marking printer as online",
+				"printer_name", iterPrinter.Name,
+			)
 		default:
 			fmt.Println("No idea")
 		}
-		printerJson, err := json.Marshal(eventMessage.Printer)
-		if err != nil {
-			panic(err.Error())
-		}
-
-		fmt.Println(string(printerJson))
 	}
 }
 
@@ -97,11 +121,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer logger.Sync()
 
 	sugar := logger.Sugar()
 
 	go func() {
-		for { 
+		for {
 			_ = <-sigs
 			done <- true
 		}
@@ -117,7 +142,7 @@ func main() {
 	db.AutoMigrate(&PrinterAPIConfig{})
 	db.AutoMigrate(&Printer{})
 
-	go HandlePrinterTopicEvents(ctx, sugar, db)
+	go handlePrinterTopicEvents(ctx, sugar, db, "printer_events")
 
 	<-done
 

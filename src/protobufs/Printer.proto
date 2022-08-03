@@ -29,7 +29,7 @@ message PrinterAPI {
 }
 
 message Printer {
-    int32 id = 1; // Unique ID
+    string id = 1; // UUID
     string name = 2;
 
     PrinterAPI api = 3;
