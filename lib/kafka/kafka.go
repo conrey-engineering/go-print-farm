@@ -1,4 +1,4 @@
-package main
+package kafka
 
 import (
 	"github.com/segmentio/kafka-go"
@@ -20,7 +20,7 @@ func (w *KafkaConnector) newReaderConfig(topic string, partition int) kafka.Read
 	}
 }
 
-func (w *KafkaConnector) newReader(topic string, partition int) *kafka.Reader {
+func (w *KafkaConnector) NewReader(topic string, partition int) *kafka.Reader {
 	config := w.newReaderConfig(topic, partition)
 	return kafka.NewReader(config)
 }
@@ -35,7 +35,7 @@ func (w *KafkaConnector) newWriterConfig(topic string, partition int) kafka.Writ
 	}
 }
 
-func (w *KafkaConnector) newWriter(topic string, partition int) *kafka.Writer {
+func (w *KafkaConnector) NewWriter(topic string, partition int) *kafka.Writer {
 	config := w.newWriterConfig(topic, partition)
 	return kafka.NewWriter(config)
 }

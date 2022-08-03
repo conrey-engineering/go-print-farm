@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	libKafka "github.com/conrey-engineering/go-print-farm/lib/kafka"
 	"github.com/gorilla/mux"
 	"github.com/segmentio/kafka-go"
-	// kafkaTest "github.com/conrey-engineering/go-print-farm/lib/kafka"
 	"go.uber.org/zap"
 	"log"
 	"net/http"
@@ -28,12 +28,12 @@ var (
 	KafkaPartition      = 0
 
 	// kafkaConn = newKafkaConnector(KafkaBrokers)
-	kafkaConn = KafkaConnector{
+	kafkaConn = libKafka.KafkaConnector{
 		Brokers: KafkaBrokers,
 	}
-	PrinterEventReader       = kafkaConn.newReader("printer_events", 0)
-	PrinterHeartbeatReader   = kafkaConn.newReader("printer_heartbeats", 0)
-	PrinterEventWriter       = kafkaConn.newWriter("printer_events", 0)
+	PrinterEventReader       = kafkaConn.NewReader("printer_events", 0)
+	PrinterHeartbeatReader   = kafkaConn.NewReader("printer_heartbeats", 0)
+	PrinterEventWriter       = kafkaConn.NewWriter("printer_events", 0)
 	Logger, _                = zap.NewProduction()
 	SugarLogger              = Logger.Sugar()
 	printerEventMessages     = KafkaMessages{}

@@ -13,13 +13,12 @@ go_binary(
 go_library(
     name = "api_lib",
     srcs = [
-        # "kafka_connector.go",
-        "kafka_connector.go",
         "kafka_messages.go",
         "main.go",
     ],
     importpath = "github.com/conrey-engineering/go-print-farm/src/api",
     deps = [
+        "//lib/kafka",
         "//src/protobufs:printer_proto_go",
         "@com_github_gorilla_mux//:go_default_library",
         "@com_github_segmentio_kafka_go//:kafka-go",

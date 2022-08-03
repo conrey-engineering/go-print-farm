@@ -17,6 +17,7 @@ go_library(
     ],
     importpath = "github.com/conrey-engineering/go-print-farm/src/heartbeat",
     deps = [
+        "//lib/kafka",
         "//src/protobufs:heartbeat_go_proto",
         "//src/protobufs:printer_proto_go",
         "@com_github_segmentio_kafka_go//:kafka-go",

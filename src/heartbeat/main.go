@@ -2,10 +2,8 @@ package main
 
 import (
 	"context"
-	"time"
-	// "log"
 	"encoding/json"
-	// "fmt"
+	libKafka "github.com/conrey-engineering/go-print-farm/lib/kafka"
 	heartbeat "github.com/conrey-engineering/go-print-farm/src/protobufs/heartbeat"
 	pb "github.com/conrey-engineering/go-print-farm/src/protobufs/printer"
 	"github.com/segmentio/kafka-go"
@@ -13,28 +11,23 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 var (
-	logger, _   = zap.NewProduction()
-	sugarLogger = logger.Sugar()
-	heartbeats  = make(chan heartbeat.PrinterHeartbeat)
-	printers    []PrinterWrapper
+	logger, _           = zap.NewProduction()
+	sugarLogger         = logger.Sugar()
+	heartbeats          = make(chan heartbeat.PrinterHeartbeat)
+	printers            []PrinterWrapper
+	KafkaReaderMinBytes = int(10e3) // 10KB
+	KafkaReaderMaxBytes = int(10e6) // 10MB
+	KafkaBrokers        = []string{"127.0.0.1:9092"}
+	KafkaPartition      = 0
+
+	kafkaConn = libKafka.KafkaConnector{
+		Brokers: KafkaBrokers,
+	}
 )
-
-func generateKafkaWriter(topic string, partition int) kafka.Writer {
-	sugarLogger.Infow("Creating kafka writer",
-		"topic", topic,
-		"partition", partition,
-	)
-	var writer = kafka.NewWriter(kafka.WriterConfig{
-		Brokers: []string{"127.0.0.1:9092"},
-		Topic:   topic,
-	})
-
-	return *writer
-
-}
 
 func pollPrinter(printer PrinterWrapper) {
 	var heartbeat_result heartbeat.PrinterHeartbeat_Result
@@ -62,9 +55,8 @@ func pollPrinters() {
 	}
 }
 
-func processHeartbeats(writer kafka.Writer, heartbeatChan <-chan heartbeat.PrinterHeartbeat) {
+func processHeartbeats(writer *kafka.Writer, heartbeatChan <-chan heartbeat.PrinterHeartbeat) {
 	for {
-		// var heartbeatMsgs []kafka.Message
 		for heartbeat := range heartbeatChan {
 			heartbeatJson, _ := json.Marshal(heartbeat)
 			msg := kafka.Message{
@@ -81,15 +73,12 @@ func processHeartbeats(writer kafka.Writer, heartbeatChan <-chan heartbeat.Print
 					"info", string(msg.Value),
 				)
 			}
-			// heartbeatMsgs = append(heartbeatMsgs, msg)
 		}
 	}
 }
 
 func main() {
 	defer logger.Sync()
-	var writer = generateKafkaWriter("printer_heartbeats", 0)
-
 	examplePrinter := PrinterWrapper{&pb.Printer{
 		Id:   "a40959ab-8b96-46ea-b8c7-f0cf169ff602",
 		Name: "Test Printer",
@@ -111,36 +100,14 @@ func main() {
 		}
 	}()
 
-	// Watch the `heartbeats` chan for heartbeats, publish to Kafka as they occur
+	sugarLogger.Infow("Creating kafka writer",
+		"topic", "printer_heartbeats",
+		"partition", 0,
+	)
+	writer := kafkaConn.NewWriter("printer_heartbeats", 0)
+
+	// Watch the `heartbeats` chan for heartbeats, publish to Kafka as they occur]
 	go processHeartbeats(writer, heartbeats)
-
-	// go func() {
-	// 	for {
-	// 		var kafkaMessages []kafka.Message
-	// 		for heartbeat := range heartbeats {
-	// 			heartbeatJSON, _ := json.Marshal(heartbeat)
-	// 			// fmt.Println(string(heartbeatJSON))
-	// 			err := writer.WriteMessages(context.Background(),
-	// 				kafka.Message{
-	// 					Key:   []byte("heartbeat"),
-	// 					Value: heartbeatJSON,
-	// 				},
-	// 			)
-	// 			if err != nil {
-	// 				panic(err.Error())
-	// 				// sugarLogger.Fatalw("Failed to write messages", err.Error())
-	// 			}
-	// 			sugarLogger.Infow("Sent heartbeat",
-	// 				"printer_id", heartbeat.PrinterId,
-	// 				"data", string(heartbeatJSON),
-	// 			)
-	// 		}
-	// 	}
-	// }()
-
-	if err := writer.Close(); err != nil {
-		sugarLogger.Fatal("failed to close writer:", err)
-	}
 
 	sigs := make(chan os.Signal, 1)
 

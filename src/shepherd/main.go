@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/segmentio/kafka-go"
+	// "github.com/segmentio/kafka-go"
 	//  "github.com/conrey-engineering/go-print-farm/lib/kafka"
 	"context"
 	"encoding/json"
+	"github.com/conrey-engineering/go-print-farm/lib/kafka"
 	pb "github.com/conrey-engineering/go-print-farm/src/protobufs/printer"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -15,6 +16,18 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+)
+
+var (
+	KafkaReaderMinBytes = int(10e3) // 10KB
+	KafkaReaderMaxBytes = int(10e6) // 10MB
+	KafkaBrokers        = []string{"127.0.0.1:9092"}
+	KafkaPartition      = 0
+
+	kafkaConn = kafka.KafkaConnector{
+		Brokers: KafkaBrokers,
+	}
+	// PrinterEventReader = kafkaConn.newReader("printer_events", 0)
 )
 
 func newPrinter(db *gorm.DB, printer *pb.Printer) {
@@ -37,29 +50,20 @@ func newPrinter(db *gorm.DB, printer *pb.Printer) {
 	db.Debug().FirstOrCreate(&printerDb)
 }
 
-func generateKafkaReader(logger *zap.SugaredLogger, topic string, partition int) *kafka.Reader {
-	logger.Infow("Creating kafka reader",
-		"topic", topic,
-		"partition", partition,
-	)
-	var rdr = kafka.NewReader(kafka.ReaderConfig{
-		Brokers:   []string{"127.0.0.1:9092"},
-		Topic:     topic,
-		Partition: partition,
-		MinBytes:  10e3, // 10KB
-		MaxBytes:  10e6, // 10MB
-	})
-
-	logger.Infow("Created kafka reader",
-		"topic", topic,
-		"partition", partition,
-	)
-
-	return rdr
-}
-
 func handlePrinterTopicEvents(ctx context.Context, logger *zap.SugaredLogger, db *gorm.DB, kafka_topic string) {
-	rdr := generateKafkaReader(logger, kafka_topic, 0)
+	topic := "printer_events"
+	partition := 0
+
+	logger.Debugw("Creating kafka reader",
+		"topic", topic,
+		"partition", partition,
+	)
+	rdr := kafkaConn.NewReader(topic, partition)
+	logger.Debugw("Created kafka reader",
+		"topic", topic,
+		"partition", partition,
+	)
+
 	rdr.SetOffset(0)
 	logger.Infow("Listening for messages",
 		"kafka_topic", kafka_topic,

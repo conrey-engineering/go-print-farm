@@ -1,12 +1,11 @@
 package main
 
 import (
-	"net/http"
-	"time"
-	// "io/ioutil"
 	"fmt"
 	pb "github.com/conrey-engineering/go-print-farm/src/protobufs/printer"
 	"io"
+	"net/http"
+	"time"
 )
 
 type OctopiPrinter struct {
@@ -23,7 +22,7 @@ func (p *OctopiPrinter) Poll() (*pb.PrinterStatus, error) {
 	req.Header.Add("X-Api-Key", p.Printer.Api.Secret)
 
 	client := &http.Client{
-		Timeout: time.Second*10,
+		Timeout: time.Second * 10,
 	}
 
 	resp, err := client.Do(req)
