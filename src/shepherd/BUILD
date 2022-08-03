@@ -10,28 +10,6 @@ go_binary(
     embed = [":shepherd_lib"],
 )
 
-# go_library(
-#     name = "lib",
-#     srcs = ["main.go"],
-#     importpath = "",
-#     deps = [
-#         "//src/protobufs:printer_proto_go",
-#         "@com_github_segmentio_kafka_go//:kafka-go",
-#         "@org_golang_google_protobuf//proto",
-#     ],
-# )
-
-# go_library(
-#     name = "web-server_lib",
-#     srcs = ["main.go"],
-#     importpath = "github.com/conrey-engineering/go-print-farm/src/web-server",
-#     deps = [
-#         "//src/protobufs:printer_proto_go",
-#         "@com_github_segmentio_kafka_go//:kafka-go",
-#         "@org_golang_google_protobuf//proto",
-#     ],
-# )
-
 go_library(
     name = "shepherd_lib",
     srcs = [
