@@ -205,6 +205,137 @@ go_repository(
     version = "v0.0.0-20220722155217-630584e8d5aa",
 )
 
+go_repository(
+    name = "org_golang_x_sys",
+    importpath = "golang.org/x/sys",
+    sum = "h1:9vYwv7OjYaky/tlAeD7C4oC9EsPTlaFl1H2jS++V+ME=",
+    version = "v0.0.0-20220804214406-8e32c043e418",
+)
+
+
+go_repository(
+    name = "com_github_aws_aws_sdk_go",
+    importpath = "github.com/aws/aws-sdk-go",
+    sum = "h1:wrwAbqJqf+ncEK1F/bXTYpgO6zXIgQXi/2ppBgmYI9g=",
+    version = "v1.44.70",
+)
+
+# go_repository(
+#     name = "com_github_aws_aws_sdk_go_aws_client",
+#     importpath = "github.com/aws/aws-sdk-go/aws/client",
+#     sum = "h1:3A3DEizrCK6dAbBoRGh8KmoZij7She9snclG1ixY/xQ=",
+#     version = "v1.44.70",
+# )
+
+go_repository(
+    name = "com_github_jmespath_go_jmespath",
+    importpath = "github.com/jmespath/go-jmespath",
+    sum = "h1:BEgLn5cpjn8UN1mAw4NjwDrS35OdebyEtFe+9YPoQUg=",
+    version = "v0.4.0",
+)
+
+go_repository(
+    name = "com_github_conrey_engineering_go_octoprint",
+    importpath = "github.com/conrey-engineering/go-octoprint",
+    urls = ["https://github.com/conrey-engineering/go-octoprint/archive/refs/heads/main.zip"],
+    strip_prefix = "go-octoprint-main",
+)
+
+go_repository(
+    name = "io_opentelemetry_go_contrib",
+    importpath = "go.opentelemetry.io/contrib",
+    version = "v1.9.0",
+    sum = "h1:2KAoCVu4OMI9TYoSWvcV7+UbbIPOi4623S77nV+M/Ks=",
+)
+
+# go_repository(
+#     name = "io_opentelemetry_go_otel",
+#     importpath = "go.opentelemetry.io/otel",
+#     version = "v1.9.0",
+#     sum = "h1:8WZNQFIB2a71LnANS9JeyidJKKGOOremcUtb/OtHISw=",
+# )
+
+go_repository(
+    name = "io_opentelemetry_go_otel",
+    importpath = "go.opentelemetry.io/otel",
+    urls = ["https://github.com/open-telemetry/opentelemetry-go/archive/refs/tags/v1.9.0.zip"],
+    strip_prefix = "opentelemetry-go-1.9.0"
+)
+
+go_repository(
+    name = "io_opentelemetry_go_otel_sdk_trace",
+    importpath = "go.opentelemetry.io/otel/sdk/trace",
+    urls = ["https://github.com/open-telemetry/opentelemetry-go/archive/refs/tags/v1.9.0.zip"],
+    strip_prefix = "opentelemetry-go-1.9.0/sdk/trace"
+)
+
+# go_repository(
+#     name = "io_opentelemetry_go_otel_attribute",
+#     importpath = "go.opentelemetry.io/otel/attribute",
+#     urls = ["https://github.com/open-telemetry/opentelemetry-go/archive/refs/tags/v1.9.0.zip"],
+#     strip_prefix = "opentelemetry-go-1.9.0/attribute"
+# )
+
+# go_repository(
+#     name = "io_opentelemetry_go_otel_internal",
+#     importpath = "go.opentelemetry.io/otel/internal",
+#     urls = ["https://github.com/open-telemetry/opentelemetry-go/archive/refs/tags/v1.9.0.zip"],
+#     strip_prefix = "opentelemetry-go-1.9.0/internal"
+# )
+
+go_repository(
+    name = "io_opentelemetry_go_otel_sdk_instrumentation",
+    importpath = "go.opentelemetry.io/otel/sdk/instrumentation",
+    urls = ["https://github.com/open-telemetry/opentelemetry-go/archive/refs/tags/v1.9.0.zip"],
+    strip_prefix = "opentelemetry-go-1.9.0/sdk/instrumentation"
+)
+
+go_repository(
+    name = "io_opentelemetry_go_otel_sdk_resource",
+    importpath = "go.opentelemetry.io/otel/sdk/resource",
+    urls = ["https://github.com/open-telemetry/opentelemetry-go/archive/refs/tags/v1.9.0.zip"],
+    strip_prefix = "opentelemetry-go-1.9.0/sdk/resource"
+)
+
+go_repository(
+    name = "io_opentelemetry_go_otel_sdk_internal",
+    importpath = "go.opentelemetry.io/otel/sdk/internal",
+    urls = ["https://github.com/open-telemetry/opentelemetry-go/archive/refs/tags/v1.9.0.zip"],
+    strip_prefix = "opentelemetry-go-1.9.0/sdk/internal"
+)
+
+go_repository(
+    name = "io_opentelemetry_go_otel_exporters_jaeger",
+    importpath = "go.opentelemetry.io/otel/exporters/jaeger",
+    # version = "v1.9.0",
+    # sum = "h1:gAEgEVGDWwFjcis9jJTOJqZNxDzoZfR12WNIxr7g9Ww=",
+    urls = ["https://github.com/open-telemetry/opentelemetry-go/archive/refs/tags/v1.9.0.zip"],
+    strip_prefix = "opentelemetry-go-1.9.0/exporters/jaeger"
+)
+
+go_repository(
+    name = "io_opentelemetry_go_otel_semconv_v1_12_0",
+    importpath = "go.opentelemetry.io/otel/semconv/v1.12.0",
+    # version = "v1.9.0",
+    # sum = "h1:gAEgEVGDWwFjcis9jJTOJqZNxDzoZfR12WNIxr7g9Ww=",
+    urls = ["https://github.com/open-telemetry/opentelemetry-go/archive/refs/tags/v1.9.0.zip"],
+    strip_prefix = "opentelemetry-go-1.9.0/semconv/v1.12.0"
+)
+
+go_repository(
+    name = "com_github_go_logr_stdr",
+    importpath = "github.com/go-logr/stdr",
+    version = "v1.2.2",
+    sum = "h1:hSWxHoqTgW2S2qGc0LTAI563KZ5YKYRhT3MFKZMbjag=",
+)
+
+go_repository(
+    name = "com_github_go_logr_logr",
+    importpath = "github.com/go-logr/logr",
+    version = "v1.2.3",
+    sum = "h1:2DntVwHkVopvECVRSlL5PSo9eG+cAkDCuckLubN+rq0=",
+)
+
 #### Protobuf
 load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies", "rules_proto_toolchains")
 load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")

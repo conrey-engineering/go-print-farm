@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	libKafka "github.com/conrey-engineering/go-print-farm/lib/kafka"
+	"github.com/conrey-engineering/go-print-farm/src/protobufs/print"
 	pb "github.com/conrey-engineering/go-print-farm/src/protobufs/printer"
 	"github.com/gorilla/mux"
 	"github.com/segmentio/kafka-go"
@@ -29,11 +30,14 @@ var (
 	}
 	PrinterEventReader       = kafkaConn.NewReader("printer_events", 0)
 	PrinterHeartbeatReader   = kafkaConn.NewReader("printer_heartbeats", 0)
-	PrinterEventWriter       = kafkaConn.NewWriter("printer_events", 0)
+	KafkaWriter              = kafkaConn.NewWriter(0)
 	Logger, _                = zap.NewProduction()
 	SugarLogger              = Logger.Sugar()
 	printerEventMessages     = KafkaMessages{}
 	printerHeartbeatMessages = KafkaMessages{}
+	printFileQueue           = PrintRequestQueue{
+		c: make(chan print.PrintRequestEvent),
+	}
 )
 
 func hello(w http.ResponseWriter, req *http.Request) {
@@ -50,36 +54,6 @@ func headers(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func printerHeartbeatMessageWatchdog() {
-	SugarLogger.Infow("Starting Printer heartbeat message watchdog")
-	for {
-		msg, err := PrinterHeartbeatReader.ReadMessage(context.Background())
-		if err != nil {
-			SugarLogger.Error(err.Error())
-			break
-		}
-		printerHeartbeatMessages.Add(string(msg.Value))
-	}
-}
-
-func printerEventMessageWatchdog() {
-	SugarLogger.Infow("Starting Printer event message watchdog")
-	for {
-		msg, err := PrinterEventReader.ReadMessage(context.Background())
-		if err != nil {
-			SugarLogger.Error(err.Error())
-		}
-
-		var eventMessage = pb.PrinterEvent{}
-		json.Unmarshal(msg.Value, &eventMessage)
-		if eventMessage.Printer == nil {
-			SugarLogger.Errorw("Error: Printer not found in event message")
-			continue
-		}
-		printerEventMessages.Add(string(msg.Value))
-	}
-}
-
 func servePrinterHeartbeatLog(w http.ResponseWriter, r *http.Request) {
 	data, _ := json.Marshal(printerHeartbeatMessages.Messages)
 	fmt.Fprintf(w, "%s", string(data))
@@ -87,6 +61,33 @@ func servePrinterHeartbeatLog(w http.ResponseWriter, r *http.Request) {
 
 func servePrinterEventLog(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", printerEventMessages.Messages)
+}
+
+func servePrintCreate(w http.ResponseWriter, r *http.Request) {
+	var (
+		printRequest = print.PrintRequest{}
+		body, _      = io.ReadAll(r.Body)
+	)
+
+	err := json.Unmarshal(body, &printRequest)
+	if err != nil {
+		SugarLogger.Errorw("Error converting data to PrintRequest",
+			"error", err.Error(),
+		)
+	}
+
+	SugarLogger.Infow("Print Create Request",
+		"name", printRequest.Name,
+	)
+
+	printEvent := print.PrintRequestEvent{
+		Action:  print.PrintRequestEvent_CREATE,
+		Request: &printRequest,
+	}
+
+	go printFileQueue.Add(printEvent)
+	w.WriteHeader(http.StatusCreated)
+	return
 }
 
 func servePrinterCreate(w http.ResponseWriter, r *http.Request) {
@@ -128,8 +129,9 @@ func servePrinterCreate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	msgData, _ := json.Marshal(printerEventMessage)
-	err := PrinterEventWriter.WriteMessages(context.Background(),
+	err := KafkaWriter.WriteMessages(context.Background(),
 		kafka.Message{
+			Topic: "printer_events",
 			Value: msgData,
 		},
 	)
@@ -152,8 +154,9 @@ func loggingMiddleware(next http.Handler) http.Handler {
 }
 
 func main() {
-	go printerEventMessageWatchdog()
-	go printerHeartbeatMessageWatchdog()
+	go printerEventMessageWatchdog(PrinterEventReader, printerEventMessages, SugarLogger)
+	go printerHeartbeatMessageWatchdog(PrinterHeartbeatReader, printerHeartbeatMessages, SugarLogger)
+	go printEventMessageWatchdog(KafkaWriter, printFileQueue.c, SugarLogger)
 
 	var wait time.Duration
 	defer Logger.Sync()
@@ -170,6 +173,8 @@ func main() {
 	mux.HandleFunc("/printers/create", servePrinterCreate).Methods("POST")
 	mux.HandleFunc("/printers/events", servePrinterEventLog)
 	mux.HandleFunc("/printers/heartbeats", servePrinterHeartbeatLog)
+	mux.HandleFunc("/print/create", servePrintCreate).Methods("POST")
+	// mux.HandleFunc("/print/{id}/upload", serverPrintFileUpload).Methods("POST")
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		// an example API handler
 		json.NewEncoder(w).Encode(map[string]bool{"ok": true})

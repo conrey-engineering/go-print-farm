@@ -1,0 +1,15 @@
+syntax = "proto3";
+package main;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/conrey-engineering/go-print-farm/src/protobufs/files";
+
+message S3File {
+    string id = 1;
+    string bucket = 2;
+    string name = 3;
+    string shasum = 4;
+    string filepath = 5;
+    google.protobuf.Timestamp last_updated = 6;
+}

@@ -1,0 +1,33 @@
+syntax = "proto3";
+package main;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/conrey-engineering/go-print-farm/src/protobufs/print";
+
+message PrintFile {
+    string id = 1;
+    string filename = 2;
+    string shasum = 3;
+    string bucket_name = 4;
+    google.protobuf.Timestamp last_updated = 5;
+}
+
+// A Print is the object produced from an STL on a given Printer
+message PrintRequest {
+    string id = 1; // UUID
+    string name = 2;
+    PrintFile file = 3;
+    google.protobuf.Timestamp last_updated = 5;
+}
+
+message PrintRequestEvent {
+    string id = 1;
+    enum Type {
+        CREATE = 0;
+        DELETE = 1;
+    }
+    Type type = 2;
+    PrintRequest request = 3;
+    google.protobuf.Timestamp received_at = 4;
+}

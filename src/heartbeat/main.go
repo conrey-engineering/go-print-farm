@@ -1,12 +1,11 @@
 package main
 
 import (
-	"context"
-	"encoding/json"
 	libKafka "github.com/conrey-engineering/go-print-farm/lib/kafka"
+	tracing "github.com/conrey-engineering/go-print-farm/lib/tracing"
 	heartbeat "github.com/conrey-engineering/go-print-farm/src/protobufs/heartbeat"
 	pb "github.com/conrey-engineering/go-print-farm/src/protobufs/printer"
-	"github.com/segmentio/kafka-go"
+	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 	"os"
 	"os/signal"
@@ -29,56 +28,17 @@ var (
 	}
 )
 
-func pollPrinter(printer PrinterWrapper) {
-	var heartbeat_result heartbeat.PrinterHeartbeat_Result
-
-	printer.Poll()
-
-	switch hb_type := printer.Printer.Status.State; hb_type {
-	case pb.PrinterStatus_ACTIVE:
-		heartbeat_result = heartbeat.PrinterHeartbeat_SUCCESS
-	default:
-		heartbeat_result = heartbeat.PrinterHeartbeat_FAILURE
-	}
-
-	heartbeats <- heartbeat.PrinterHeartbeat{
-		Result:    heartbeat_result,
-		PrinterId: printer.Printer.Id,
-		Message:   printer.Printer.Status.Message,
-	}
-
-}
-
-func pollPrinters() {
-	for _, printer := range printers {
-		go pollPrinter(printer)
-	}
-}
-
-func processHeartbeats(writer *kafka.Writer, heartbeatChan <-chan heartbeat.PrinterHeartbeat) {
-	for {
-		for heartbeat := range heartbeatChan {
-			heartbeatJson, _ := json.Marshal(heartbeat)
-			msg := kafka.Message{
-				Key:   []byte("heartbeat"),
-				Value: heartbeatJson,
-			}
-			err := writer.WriteMessages(context.Background(), msg)
-			if err != nil {
-				sugarLogger.Errorw("Error writing heartbeat message to kafka",
-					"error", err.Error(),
-				)
-			} else {
-				sugarLogger.Infow("Published heartbeat message to kafka",
-					"info", string(msg.Value),
-				)
-			}
-		}
-	}
-}
-
 func main() {
+	tracer, err := tracing.NewTracerProvider("http://localhost:1234")
+	if err != nil {
+		sugarLogger.Errorw("Error starting tracer",
+			"error", err.Error(),
+		)
+	}
+
+	otel.SetTracerProvider(tracer)
 	defer logger.Sync()
+
 	examplePrinter := PrinterWrapper{&pb.Printer{
 		Id:   "a40959ab-8b96-46ea-b8c7-f0cf169ff602",
 		Name: "Test Printer",
@@ -104,7 +64,7 @@ func main() {
 		"topic", "printer_heartbeats",
 		"partition", 0,
 	)
-	writer := kafkaConn.NewWriter("printer_heartbeats", 0)
+	writer := kafkaConn.NewWriter(0)
 
 	// Watch the `heartbeats` chan for heartbeats, publish to Kafka as they occur]
 	go processHeartbeats(writer, heartbeats)

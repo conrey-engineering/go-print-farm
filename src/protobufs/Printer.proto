@@ -26,6 +26,7 @@ message PrinterAPI {
     string secret = 2;
     string hostname = 3;
     int32 port = 4;
+    string version = 5;
 }
 
 message Printer {

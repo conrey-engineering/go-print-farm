@@ -1,0 +1,27 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_binary(
+    name = "usher",
+    embed = [":usher_lib"],
+    visibility = ["//visibility:public"],
+)
+
+go_library(
+    name = "usher_lib",
+    srcs = [
+        "main.go",
+        "s3.go",
+    ],
+    importpath = "github.com/conrey-engineering/go-print-farm/src/usher",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//src/protobufs:print_go_proto",
+        "@com_github_aws_aws_sdk_go//aws",
+        "@com_github_aws_aws_sdk_go//aws/awserr",
+        "@com_github_aws_aws_sdk_go//aws/credentials",
+        "@com_github_aws_aws_sdk_go//aws/session",
+        "@com_github_aws_aws_sdk_go//service/s3",
+        "@com_github_aws_aws_sdk_go//service/s3/s3manager",
+        "@com_github_google_uuid//:uuid",
+    ],
+)

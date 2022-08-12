@@ -36,3 +36,27 @@ go_proto_library(
 )
 
 exports_files(["*.proto"])
+
+proto_library(
+    name = "print_proto",
+    srcs = ["Print.proto"],
+    deps = ["@com_google_protobuf//:timestamp_proto"],
+)
+
+go_proto_library(
+    name = "print_go_proto",
+    importpath = "github.com/conrey-engineering/go-print-farm/src/protobufs/print",
+    proto = ":print_proto",
+)
+
+proto_library(
+    name = "files_proto",
+    srcs = ["Files.proto"],
+    deps = ["@com_google_protobuf//:timestamp_proto"],
+)
+
+go_proto_library(
+    name = "files_go_proto",
+    importpath = "github.com/conrey-engineering/go-print-farm/src/protobufs/files",
+    proto = ":files_proto",
+)

@@ -1,0 +1,9 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "printer_helper",
+    srcs = ["printer_helper.go"],
+    importpath = "github.com/conrey-engineering/go-print-farm/lib/printer_helper",
+    visibility = ["//visibility:public"],
+    deps = ["//src/protobufs:printer_proto_go"],
+)

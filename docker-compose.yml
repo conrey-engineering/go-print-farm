@@ -17,18 +17,6 @@ services:
       - db_data:/var/lib/postgresql/data
     environment:
       POSTGRES_PASSWORD: 'password'
-  # graphql:
-  #   image: hasura/graphql-engine:v2.9.0
-  #   ports:
-  #     - "8081:8080"
-  #   depends_on:
-  #     - postgres
-  #   restart: always
-  #   environment:
-  #     HASURA_GRAPHQL_METADATA_DATABASE_URL: postgres://postgres:password@postgres:5432/postgres
-  #     HASURA_GRAPHQL_DATABASE_URL: postgres://postgres:password@postgres:5432/postgres
-  #     HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
-  #     HASURA_GRAPHQL_DEV_MODE: "true"
   zookeeper:
     image: docker.io/bitnami/zookeeper:3.8
     ports:
@@ -47,7 +35,8 @@ services:
     environment:
       - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
       - ALLOW_PLAINTEXT_LISTENER=yes
-      - KAFKA_CREATE_TOPICS="printers:0:0"
+      # - KAFKA_CREATE_TOPICS="printers:0:0,print_events:0:0"
+      - KAFKA_AUTO_CREATE_TOPICS_ENABLE=true
       - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092
       - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://127.0.0.1:9092
     depends_on:

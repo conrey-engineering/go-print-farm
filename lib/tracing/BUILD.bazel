@@ -1,0 +1,21 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "tracing_lib",
+    srcs = ["tracing.go"],
+    importpath = "github.com/conrey-engineering/go-print-farm/lib/tracing",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@io_opentelemetry_go_otel//attribute",
+        "@io_opentelemetry_go_otel_exporters_jaeger//:jaeger",
+        "@io_opentelemetry_go_otel_sdk_resource//:resource",
+        "@io_opentelemetry_go_otel_sdk_trace//:trace",
+        "@io_opentelemetry_go_otel_semconv_v1_12_0//:v1_12_0",
+    ],
+)
+
+go_binary(
+    name = "tracing",
+    embed = [":tracing_lib"],
+    visibility = ["//visibility:public"],
+)

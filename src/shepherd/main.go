@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/conrey-engineering/go-print-farm/lib/kafka"
+	libKafka "github.com/conrey-engineering/go-print-farm/lib/kafka"
+	"github.com/conrey-engineering/go-print-farm/src/protobufs/print"
 	pb "github.com/conrey-engineering/go-print-farm/src/protobufs/printer"
 	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
 	"go.uber.org/zap"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -22,10 +24,9 @@ var (
 	KafkaBrokers        = []string{"127.0.0.1:9092"}
 	KafkaPartition      = 0
 
-	kafkaConn = kafka.KafkaConnector{
+	kafkaConn = libKafka.KafkaConnector{
 		Brokers: KafkaBrokers,
 	}
-	// PrinterEventReader = kafkaConn.newReader("printer_events", 0)
 )
 
 func newPrinter(db *gorm.DB, printer *pb.Printer) {
@@ -45,30 +46,12 @@ func newPrinter(db *gorm.DB, printer *pb.Printer) {
 	)
 
 	// If a printer of name printer.Name does not exist in the DB, create it
-	db.Debug().FirstOrCreate(&printerDb)
+	go db.Debug().Create(&printerDb)
 }
 
-func handlePrinterTopicEvents(ctx context.Context, logger *zap.SugaredLogger, db *gorm.DB, kafka_topic string) {
-	topic := "printer_events"
-	partition := 0
-
-	logger.Debugw("Creating kafka reader",
-		"topic", topic,
-		"partition", partition,
-	)
-	rdr := kafkaConn.NewReader(topic, partition)
-	logger.Debugw("Created kafka reader",
-		"topic", topic,
-		"partition", partition,
-	)
-
-	rdr.SetOffset(0)
-	logger.Infow("Listening for messages",
-		"kafka_topic", kafka_topic,
-	)
-
+func handlePrinterTopicEvents(rdr *kafka.Reader, logger *zap.SugaredLogger, db *gorm.DB) {
 	for {
-		msg, err := rdr.ReadMessage(ctx)
+		msg, err := rdr.ReadMessage(context.Background())
 		if err != nil {
 			panic(err.Error())
 		}
@@ -110,14 +93,42 @@ func handlePrinterTopicEvents(ctx context.Context, logger *zap.SugaredLogger, db
 	}
 }
 
+func handlePrintTopicEvents(rdr *kafka.Reader, logger *zap.SugaredLogger, db *gorm.DB) {
+	for {
+		msg, err := rdr.ReadMessage(context.Background())
+		if err != nil {
+			panic(err.Error())
+		}
+
+		var eventMessage = print.PrintRequestEvent{}
+		json.Unmarshal(msg.Value, &eventMessage)
+		if eventMessage.Request.Name == "" {
+			logger.Errorw("Error: Print Request not found in event message")
+			continue
+		}
+
+		var request = eventMessage.Request
+
+		switch eventType := eventMessage.Type; eventType {
+		case print.PrintRequestEvent_CREATE:
+			logger.Infow("Create print request",
+				"name", request.Name,
+			)
+			go db.Debug().Create(&PrintRequest{
+				Name: request.Name,
+			})
+		default:
+			fmt.Println("No idea")
+		}
+	}
+}
+
 func main() {
 	sigs := make(chan os.Signal, 1)
 
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
 	done := make(chan bool, 1)
-
-	ctx := context.Background()
 
 	logger, err := zap.NewProduction()
 	if err != nil {
@@ -140,11 +151,17 @@ func main() {
 	}
 
 	// Database migrations
-	// db.AutoMigrate(&PrinterAPIType{})
 	db.AutoMigrate(&PrinterAPIConfig{})
 	db.AutoMigrate(&Printer{})
+	db.AutoMigrate(&PrintRequest{})
 
-	go handlePrinterTopicEvents(ctx, sugar, db, "printer_events")
+	var (
+		printEventReader   = kafkaConn.NewReader("print_events", 0)
+		printerEventReader = kafkaConn.NewReader("printer_events", 0)
+	)
+
+	go handlePrinterTopicEvents(printerEventReader, sugar, db)
+	go handlePrintTopicEvents(printEventReader, sugar, db)
 
 	<-done
 
